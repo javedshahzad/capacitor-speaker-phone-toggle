@@ -1,5 +1,5 @@
 {
-  "name": "@javed-shahzad/capacitor-speacker-phone-toggle",
+  "name": "@javed-shahzad/capacitor-speaker-phone-toggle",
   "version": "3.1.0",
   "description": "Capacitor plugin to audio toggle",
   "main": "dist/plugin.cjs.js",
@@ -17,10 +17,10 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/javedshahzad/capacitor-speacker-phone-toggle.git"
+    "url": "git+https://github.com/javedshahzad/capacitor-speaker-phone-toggle.git"
   },
   "bugs": {
-    "url": "https://github.com/javedshahzad/capacitor-speacker-phone-toggle.git/issues"
+    "url": "https://github.com/javedshahzad/capacitor-speaker-phone-toggle.git/issues"
   },
   "keywords": [
     "capacitor",
@@ -75,7 +75,7 @@
       "src": "android"
     }
   },
-  "homepage": "https://github.com/javedshahzad/capacitor-speacker-phone-toggle#readme",
+  "homepage": "https://github.com/javedshahzad/capacitor-speaker-phone-toggle#readme",
   "directories": {
     "example": "example"
   }

@@ -1,11 +1,11 @@
-# @javed-shahzad/capacitor-speacker-phone-toggle
+# @javed-shahzad/capacitor-speaker-phone-toggle
 
 Capacitor plugin to audio toggle
 
 ## Install
 
 ```bash
-npm install @javed-shahzad/capacitor-speacker-phone-toggle
+npm install @javed-shahzad/capacitor-speaker-phone-toggle
 npx cap sync
 ```
 
@@ -26,7 +26,7 @@ npx cap sync
 ### Import the plugin: In your code, import the plugin:
 
 ```
- import { AudioTogglePlugin } from '@javed-shahzad/capacitor-speacker-phone-toggle';
+ import { AudioTogglePlugin } from '@javed-shahzad/capacitor-speaker-phone-toggle';
 ```
 
 ### setSpeakerOn(...)
