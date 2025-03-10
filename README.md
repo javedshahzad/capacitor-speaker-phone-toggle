@@ -8,7 +8,11 @@ Capacitor plugin to audio toggle
 npm install capacitor-speaker-phone-toggle
 npx cap sync
 ```
+ ### Import the plugin: In your code, import the plugin:
 
+```
+ import { AudioTogglePlugin } from 'capacitor-speaker-phone-toggle';
+```
 ## API
 
 <docgen-index>
