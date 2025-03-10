@@ -1,5 +1,5 @@
 {
-  "name": "@anuradev/capacitor-audio-toggle",
+  "name": "@javed-shahzad/capacitor-speacker-phone-toggle",
   "version": "3.1.0",
   "description": "Capacitor plugin to audio toggle",
   "main": "dist/plugin.cjs.js",
@@ -13,14 +13,14 @@
     "ios/Plugin/",
     "AnuradevCapacitorAudioToggle.podspec"
   ],
-  "author": "Angelo Raso",
+  "author": "Javed Shahzad",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/angeloraso/capacitor-audio-toggle.git.git"
+    "url": "git+https://github.com/javedshahzad/capacitor-speacker-phone-toggle.git"
   },
   "bugs": {
-    "url": "https://github.com/angeloraso/capacitor-audio-toggle.git/issues"
+    "url": "https://github.com/javedshahzad/capacitor-speacker-phone-toggle.git/issues"
   },
   "keywords": [
     "capacitor",
@@ -74,5 +74,9 @@
     "android": {
       "src": "android"
     }
+  },
+  "homepage": "https://github.com/javedshahzad/capacitor-speacker-phone-toggle#readme",
+  "directories": {
+    "example": "example"
   }
 }
