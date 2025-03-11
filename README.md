@@ -40,6 +40,13 @@ setSpeakerOn(data: { speakerOn: boolean; }) => Promise<void>
 ```
 ### Exapmle Function
 
+
+| Param      | Type                                 |
+| ---------- | ------------------------------------ |
+| **`data`** | <code>{ speakerOn: boolean; }</code> |
+
+--------------------
+
 ```typescript
   async toggleAudio() {
     try {
@@ -51,13 +58,6 @@ setSpeakerOn(data: { speakerOn: boolean; }) => Promise<void>
   }
 
 ```
-
-| Param      | Type                                 |
-| ---------- | ------------------------------------ |
-| **`data`** | <code>{ speakerOn: boolean; }</code> |
-
---------------------
-
 
 ### reset()
 
