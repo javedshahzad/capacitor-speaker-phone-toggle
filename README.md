@@ -38,6 +38,19 @@ import { AudioToggle } from 'capacitor-speaker-phone-toggle';
 ```typescript
 setSpeakerOn(data: { speakerOn: boolean; }) => Promise<void>
 ```
+### Exapmle Function
+
+```typescript
+  async toggleAudio() {
+    try {
+      await AudioToggle.setSpeakerOn({ speakerOn: true }); // Turn speaker on
+      // Or await AudioToggle.setSpeakerOn({ speakerOn: false }); // Turn speaker off
+    } catch (error) {
+      console.error("Error toggling speaker:", error);
+    }
+  }
+
+```
 
 | Param      | Type                                 |
 | ---------- | ------------------------------------ |
