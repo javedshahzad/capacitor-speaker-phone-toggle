@@ -61,6 +61,7 @@ setSpeakerOn(data: { speakerOn: boolean; }) => Promise<void>
 
 --------------------
 
+
 ### reset()
 
 ```typescript
