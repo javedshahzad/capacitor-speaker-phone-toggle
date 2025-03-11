@@ -1,6 +1,6 @@
 {
   "name": "capacitor-speaker-phone-toggle",
-  "version": "6.4.2",
+  "version": "6.6.0",
   "description": "Capacitor plugin to audio toggle",
   "main": "dist/plugin.cjs.js",
   "module": "dist/esm/index.js",
