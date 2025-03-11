@@ -13,6 +13,11 @@ npx cap sync
 ```
 import { AudioToggle } from 'capacitor-speaker-phone-toggle';
 ```
+### If you face any error, please check permission in your AndroidManifest.xml file
+```
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+```
 ## API
 
 <docgen-index>
