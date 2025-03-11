@@ -11,7 +11,7 @@ npx cap sync
  ### Import the plugin: In your code, import the plugin:
 
 ```
- import { AudioTogglePlugin } from 'capacitor-speaker-phone-toggle';
+import { AudioToggle } from 'capacitor-speaker-phone-toggle';
 ```
 ## API
 
