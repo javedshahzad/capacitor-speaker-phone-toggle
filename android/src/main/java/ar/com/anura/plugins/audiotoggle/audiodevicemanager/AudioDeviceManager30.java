@@ -1,79 +1,119 @@
 package ar.com.anura.plugins.audiotoggle.audiodevicemanager;
 
-import android.content.Context;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.os.Build;
+import android.util.Log;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.Arrays;
 
-@RequiresApi(api = Build.VERSION_CODES.R) // Targeting Android 11
+@RequiresApi(api = Build.VERSION_CODES.R)
 public class AudioDeviceManager30 extends AudioDeviceManager implements AudioDeviceManagerInterface {
 
-    private static final long INTERVAL = 500;
-    private boolean turnOn = false;
-    private Timer timer;
-    private TimerTask task;
-    private final AudioManager audioManager;
+  private boolean first = true;
+  private boolean notified = false;
 
-    public AudioDeviceManager30(final Context context) {
-        super(context);
-        this.audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
-        registerAudioDeviceCallbacks(this::onAudioDevicesAdded, this::onAudioDevicesRemoved);
-    }
+  AudioDeviceManager30(final AppCompatActivity activity) {
+    super(activity);
+    registerAudioDeviceCallbacks(this::onAudioDevicesAdded, this::onAudioDevicesRemoved);
+  }
 
-    public void setSpeakerOn(boolean speakerOn) {
-        this.turnOn = speakerOn;
-        stopTimer(); // Stop any existing timer before setting a new one
-
-        if (audioManager != null) {
-            setAudioFocus(); // Ensure proper audio focus
-            audioManager.setSpeakerphoneOn(turnOn);
-            audioManager.setMode(AudioManager.MODE_NORMAL);
-            notifySpeakerStatus();
+  @Override
+  public void setSpeakerOn(boolean speakerOn) {
+    notified = false;
+    Thread checkNotify = new Thread(() -> {
+      try {
+        Thread.sleep(3000);
+        if (!notified) {
+          notifySpeakerStatus();
         }
-    }
-
-    public void reset() {
-        stopTimer();
-        super.reset();
+      } catch (InterruptedException v) {
+        System.out.println(v);
         notifySpeakerStatus();
+      }
+    });
+    checkNotify.start();
+
+    if (isBluetoothConnected()) {
+      super.setAudioFocus(1300);
+    } else {
+      super.setAudioFocus(0);
     }
 
-    public void onDestroy() {
-        stopTimer();
-        unregisterAudioDeviceCallbacks(); // Unregister callbacks for cleanup
-        super.onDestroy();
+    if (first) {
+      first = false;
+      if (isWiredConnected() || isBluetoothConnected()) {
+        setSpeakerOn();
+      }
     }
 
-    private void onAudioDevicesAdded(AudioDeviceInfo[] addedDevices) {
-        notifySpeakerStatus();
+    if (!speakerOn) {
+      if (isWiredConnected() || isBluetoothConnected()) {
+        audioManager.setSpeakerphoneOn(false);
+      } else {
+        audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+        audioManager.setSpeakerphoneOn(false);
+      }
+    } else {
+      audioManager.setMode(AudioManager.MODE_NORMAL);
+      audioManager.setSpeakerphoneOn(true);
     }
 
-    private void onAudioDevicesRemoved(AudioDeviceInfo[] removedDevices) {
-        notifySpeakerStatus();
-    }
+    notifySpeakerStatus();
+  }
 
-    private void notifySpeakerStatus() {
-        if (speakerChangeListener != null) { // Null check added
-            speakerChangeListener.speakerOn(audioManager.isSpeakerphoneOn());
-        }
-    }
+  @Override
+  public void reset() {
+    super.reset();
+    first = true;
+    audioManager.setSpeakerphoneOn(false);
+    notifySpeakerStatus();
+  }
 
-    private void stopTimer() {
-        if (task != null) {
-            task.cancel();
-            task = null;
-        }
-        if (timer != null) {
-            timer.cancel();
-            timer = null;
-        }
-    }
+  public void setSpeakerChangeListener(AudioDeviceManagerListener speakerChangeListener) {
+    super.setSpeakerChangeListener(speakerChangeListener);
+  }
 
-    private void setAudioFocus() {
-        // Implement proper audio focus handling here if needed
-    }
+  public void onDestroy() {
+    super.onDestroy();
+  }
+
+  private void setSpeakerOn() {
+    audioManager.setMode(AudioManager.MODE_NORMAL);
+    audioManager.setSpeakerphoneOn(true);
+  }
+
+  private void onAudioDevicesAdded(AudioDeviceInfo[] addedDevices) {
+    notifySpeakerStatus();
+  }
+
+  private void onAudioDevicesRemoved(AudioDeviceInfo[] removedDevices) {
+    notifySpeakerStatus();
+  }
+
+  private boolean isBluetoothConnected() {
+    return getAudioDevice(AudioDeviceInfo.TYPE_BLUETOOTH_SCO) != null ||
+      getAudioDevice(AudioDeviceInfo.TYPE_BLUETOOTH_A2DP) != null;
+  }
+
+  private boolean isWiredConnected() {
+    return getAudioDevice(AudioDeviceInfo.TYPE_WIRED_HEADPHONES) != null ||
+      getAudioDevice(AudioDeviceInfo.TYPE_WIRED_HEADSET) != null;
+  }
+
+  private AudioDeviceInfo getAudioDevice(int type) {
+    AudioDeviceInfo[] devices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
+    return Arrays.stream(devices)
+      .filter(device -> device.getType() == type)
+      .findFirst()
+      .orElse(null);
+  }
+
+  private void notifySpeakerStatus() {
+    boolean status = audioManager.isSpeakerphoneOn();
+    Log.d(TAG, "Speaker on: " + status);
+    speakerChangeListener.speakerOn(status);
+    notified = true;
+  }
 }

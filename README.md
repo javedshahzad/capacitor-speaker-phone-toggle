@@ -38,23 +38,7 @@ import { AudioToggle } from 'capacitor-speaker-phone-toggle';
 ```typescript
 setSpeakerOn(data: { speakerOn: boolean; }) => Promise<void>
 ```
-### Exapmle Function
-```typescript
- async toggleAudio() {
-    try {
-  // if IsSpeaker = true, the speacker mode is enabled. if false the earpiece is enabled
-      AudioToggle.setSpeakerOn({ speakerOn: true }).then(response=>{
-        console.log(response);
-        // Turn speaker on
-      }).catch(error=>{
-        console.log(error);
-      }); 
-    } catch (error) {
-      console.error("Error toggling speaker:", error);
-    }
-  }
-  
-```
+
 | Param      | Type                                 |
 | ---------- | ------------------------------------ |
 | **`data`** | <code>{ speakerOn: boolean; }</code> |
