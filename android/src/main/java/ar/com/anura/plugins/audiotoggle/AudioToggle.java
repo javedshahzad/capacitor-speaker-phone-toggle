@@ -1,6 +1,6 @@
 package ar.com.anura.plugins.audiotoggle;
 
-import static android.media.AudioManager.STREAM_VOICE_CALL;
+import static android.media.AudioManager.MODE_IN_COMMUNICATION;
 
 import androidx.appcompat.app.AppCompatActivity;
 import ar.com.anura.plugins.audiotoggle.audiodevicemanager.AudioDeviceManagerInterface;
@@ -25,7 +25,7 @@ public class AudioToggle {
 
     public void setSpeakerOn(boolean turnOn) {
         audioManager.setSpeakerOn(turnOn);
-        activity.setVolumeControlStream(STREAM_VOICE_CALL);
+        activity.setVolumeControlStream(MODE_IN_COMMUNICATION);
     }
 
     public void reset() {

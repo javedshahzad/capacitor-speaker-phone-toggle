@@ -3,6 +3,8 @@ package ar.com.anura.plugins.audiotoggle.audiodevicemanager;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
@@ -11,194 +13,128 @@ import java.util.List;
 
 @RequiresApi(api = Build.VERSION_CODES.S)
 public class AudioDeviceManager31
-    extends AudioDeviceManager
-    implements AudioDeviceManagerInterface, AudioManager.OnCommunicationDeviceChangedListener, AudioManager.OnModeChangedListener {
+  extends AudioDeviceManager
+  implements AudioDeviceManagerInterface, AudioManager.OnCommunicationDeviceChangedListener, AudioManager.OnModeChangedListener {
 
-    private boolean first = true;
-    private boolean notified = false;
+  private static final String TAG = "AudioDeviceManager31";
+  private boolean first = true;
+  private boolean notified = false;
+  private final Handler handler = new Handler(Looper.getMainLooper());
 
-    AudioDeviceManager31(final AppCompatActivity activity) {
-        super(activity);
-        registerAudioDeviceCallbacks(this::onAudioDevicesAdded, this::onAudioDevicesRemoved);
-        audioManager.addOnCommunicationDeviceChangedListener(activity.getMainExecutor(), this);
-        audioManager.addOnModeChangedListener(activity.getMainExecutor(), this);
-    }
+  AudioDeviceManager31(final AppCompatActivity activity) {
+    super(activity);
+    registerAudioDeviceCallbacks(this::onAudioDevicesAdded, this::onAudioDevicesRemoved);
+    audioManager.addOnCommunicationDeviceChangedListener(activity.getMainExecutor(), this);
+    audioManager.addOnModeChangedListener(activity.getMainExecutor(), this);
+  }
 
-    @Override
-    public void setSpeakerOn(boolean speakerOn) {
-        notified = false;
-        Thread checkNotify = new Thread(
-            () -> {
-                try {
-                    Thread.sleep(3000);
-                    if (!notified) {
-                        notifySpeakerStatus();
-                    }
-                } catch (InterruptedException v) {
-                    System.out.println(v);
-                    notifySpeakerStatus();
-                }
-            }
-        );
-        checkNotify.start();
+  @Override
+  public void setSpeakerOn(boolean speakerOn) {
+    notified = false;
+    handler.postDelayed(this::notifySpeakerStatus, 3000);
 
-        if (isBluetoothConnected()) {
-            super.setAudioFocus(1300);
+    super.setAudioFocus(0);
+
+    boolean success;
+
+    if (!speakerOn) {
+        AudioDeviceInfo earpieceDevice = getAudioDevice(AudioDeviceInfo.TYPE_BUILTIN_EARPIECE);
+        if (earpieceDevice != null) {
+          success = audioManager.setCommunicationDevice(earpieceDevice);
+          if (!success) {
+            Log.e(TAG, "Failed to switch to earpiece mode");
+            notifySpeakerStatus();
+          }
         } else {
-            super.setAudioFocus(0);
+          Log.e(TAG, "No earpiece device found");
         }
-
-        if (first) {
-            first = false;
-
-            if (isWiredConnected() || isBluetoothConnected()) {
-                setSpeakerOn();
-            }
-        }
-
-        boolean success;
-
-        if (!speakerOn) {
-            if (isWiredConnected() || isBluetoothConnected()) {
-                audioManager.clearCommunicationDevice();
-            } else {
-                AudioDeviceInfo earpieceDevice = getAudioDevice(AudioDeviceInfo.TYPE_BUILTIN_EARPIECE);
-                if (earpieceDevice != null) {
-                    success = audioManager.setCommunicationDevice(earpieceDevice);
-                    if (!success) {
-                        Log.d(TAG, "Earpiece error");
-                        notifySpeakerStatus();
-                    }
-                }
-            }
-        } else {
-            AudioDeviceInfo deviceInfo = audioManager.getCommunicationDevice();
-            if (deviceInfo != null && deviceInfo.getType() == AudioDeviceInfo.TYPE_BUILTIN_EARPIECE) {
-                audioManager.clearCommunicationDevice();
-                audioManager.setMode(AudioManager.MODE_NORMAL);
-            } else if (isWiredConnected() || isBluetoothConnected()) {
-                setSpeakerOn();
-            }
-        }
+    } else {
+      setSpeakerOnInternal();
     }
+  }
 
-    @Override
-    public void reset() {
-        super.reset();
-        first = true;
-        audioManager.clearCommunicationDevice();
+  @Override
+  public void reset() {
+    super.reset();
+    first = true;
+    audioManager.clearCommunicationDevice();
+    notifySpeakerStatus();
+  }
+
+  public void setSpeakerChangeListener(AudioDeviceManagerListener speakerChangeListener) {
+    super.setSpeakerChangeListener(speakerChangeListener);
+  }
+
+  public void onDestroy() {
+    super.onDestroy();
+    audioManager.removeOnCommunicationDeviceChangedListener(this);
+    audioManager.removeOnModeChangedListener(this);
+    handler.removeCallbacksAndMessages(null);
+  }
+
+  private void setSpeakerOnInternal() {
+    audioManager.setMode(AudioManager.MODE_NORMAL);
+    AudioDeviceInfo speakerDevice = getAudioDevice(AudioDeviceInfo.TYPE_BUILTIN_SPEAKER);
+    if (speakerDevice != null) {
+      boolean success = audioManager.setCommunicationDevice(speakerDevice);
+      if (!success) {
+        Log.e(TAG, "Failed to switch to speaker mode");
         notifySpeakerStatus();
+      }
     }
+  }
 
-    public void setSpeakerChangeListener(AudioDeviceManagerListener speakerChangeListener) {
-        super.setSpeakerChangeListener(speakerChangeListener);
+  @Override
+  public void onCommunicationDeviceChanged(@Nullable AudioDeviceInfo audioDeviceInfo) {
+    Log.d(TAG, "Communication device changed: " + (audioDeviceInfo != null ? audioDeviceInfo.getType() : "null"));
+    notifySpeakerStatus();
+  }
+
+  @Override
+  public void onModeChanged(int iMode) {
+    Log.d(TAG, "Mode changed: " + getModeString(iMode));
+    notifySpeakerStatus();
+  }
+
+  private String getModeString(int iMode) {
+    return switch (iMode) {
+      case AudioManager.MODE_NORMAL -> "NORMAL";
+      case AudioManager.MODE_IN_COMMUNICATION -> "IN_COMMUNICATION";
+      default -> "Other: " + iMode;
+    };
+  }
+
+  private AudioDeviceInfo getAudioDevice(int type) {
+    List<AudioDeviceInfo> devices = audioManager.getAvailableCommunicationDevices();
+    for (AudioDeviceInfo device : devices) {
+      if (device.getType() == type) {
+        return device;
+      }
     }
+    return null;
+  }
 
-    public void onDestroy() {
-        super.onDestroy();
-        audioManager.removeOnCommunicationDeviceChangedListener(this);
-        audioManager.removeOnModeChangedListener(this);
+  private void onAudioDevicesAdded(AudioDeviceInfo[] addedDevices) {
+    notifySpeakerStatus();
+  }
+
+  private void onAudioDevicesRemoved(AudioDeviceInfo[] removedDevices) {
+    notifySpeakerStatus();
+  }
+
+  private boolean isWiredConnected() {
+    return getAudioDevice(AudioDeviceInfo.TYPE_WIRED_HEADPHONES) != null ||
+      getAudioDevice(AudioDeviceInfo.TYPE_WIRED_HEADSET) != null;
+  }
+
+  private void notifySpeakerStatus() {
+    boolean status = false;
+    AudioDeviceInfo communicationDevice = audioManager.getCommunicationDevice();
+    if (communicationDevice != null) {
+      status = communicationDevice.getType() == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER;
     }
-
-    private void setSpeakerOn() {
-        audioManager.setMode(AudioManager.MODE_NORMAL);
-        AudioDeviceInfo speakerDevice = getAudioDevice(AudioDeviceInfo.TYPE_BUILTIN_SPEAKER);
-        if (speakerDevice != null) {
-            boolean success = audioManager.setCommunicationDevice(speakerDevice);
-            if (!success) {
-                Log.d(TAG, "Speaker error");
-                notifySpeakerStatus();
-            }
-        }
-    }
-
-    @Override
-    public void onCommunicationDeviceChanged(@Nullable AudioDeviceInfo audioDeviceInfo) {
-        if (audioDeviceInfo != null) {
-            Log.d(TAG, "Device changed: " + audioDeviceInfo.getType());
-        }
-        showCurrentAudioDevice();
-        notifySpeakerStatus();
-    }
-
-    private void showCurrentAudioDevice() {
-        AudioDeviceInfo currentDevice = audioManager.getCommunicationDevice();
-        if (currentDevice != null) {
-            Log.d(
-                TAG,
-                "Current device: " +
-                currentDevice.getId() +
-                "," +
-                currentDevice.getType() +
-                "," +
-                currentDevice.getProductName() +
-                "," +
-                currentDevice.getAddress() +
-                "," +
-                currentDevice.isSink()
-            );
-        }
-    }
-
-    @Override
-    public void onModeChanged(int iMode) {
-        showMode(iMode);
-        notifySpeakerStatus();
-    }
-
-    private void showMode(int iMode) {
-        String strMode = "";
-        switch (iMode) {
-            case AudioManager.MODE_NORMAL:
-                strMode = "NORMAL";
-                break;
-            case AudioManager.MODE_IN_COMMUNICATION:
-                strMode = "IN_COMMUNICATION";
-                break;
-            default:
-                strMode = "Other: " + iMode;
-                break;
-        }
-        Log.d(TAG, "Mode changed: " + strMode);
-    }
-
-    private AudioDeviceInfo getAudioDevice(Integer type) {
-        List<AudioDeviceInfo> devices = audioManager.getAvailableCommunicationDevices();
-        for (AudioDeviceInfo device : devices) {
-            if (type == device.getType()) return device;
-        }
-
-        return null;
-    }
-
-    private void onAudioDevicesAdded(AudioDeviceInfo[] addedDevices) {
-        notifySpeakerStatus();
-    }
-
-    private void onAudioDevicesRemoved(AudioDeviceInfo[] removedDevices) {
-        notifySpeakerStatus();
-    }
-
-    private boolean isBluetoothConnected() {
-        AudioDeviceInfo bluetoothScoDevice = getAudioDevice(AudioDeviceInfo.TYPE_BLUETOOTH_SCO);
-        AudioDeviceInfo bluetoothA2DPDevice = getAudioDevice(AudioDeviceInfo.TYPE_BLUETOOTH_A2DP);
-        return (bluetoothScoDevice != null || bluetoothA2DPDevice != null);
-    }
-
-    private boolean isWiredConnected() {
-        AudioDeviceInfo wiredHeadphonesDevice = getAudioDevice(AudioDeviceInfo.TYPE_WIRED_HEADPHONES);
-        AudioDeviceInfo wiredHeadsetDevice = getAudioDevice(AudioDeviceInfo.TYPE_WIRED_HEADSET);
-        return (wiredHeadphonesDevice != null || wiredHeadsetDevice != null);
-    }
-
-    private void notifySpeakerStatus() {
-        boolean status = false;
-        AudioDeviceInfo communicationDevice = audioManager.getCommunicationDevice();
-        if (communicationDevice != null) {
-            status = communicationDevice.getType() == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER;
-        }
-        Log.d(TAG, "Speaker on: " + status);
-        speakerChangeListener.speakerOn(status);
-        notified = true;
-    }
+    Log.d(TAG, "Speaker status: " + status);
+    speakerChangeListener.speakerOn(status);
+    notified = true;
+  }
 }
